@@ -5,11 +5,12 @@ import lombok.Builder;
 @Builder
 public record Product(
         String name,
-        int id
+        int id,
+        double price
 ) {
 
     public Product() {
-        this("", 0);
+        this("", 0, 0.0);
     }
 
 }

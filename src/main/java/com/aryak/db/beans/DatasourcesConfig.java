@@ -1,5 +1,7 @@
 package com.aryak.db.beans;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.springframework.context.annotation.Bean;
@@ -18,6 +20,7 @@ public class DatasourcesConfig {
         ds.setUrl("jdbc:h2:mem:testdb");
         ds.setPassword("");
         ds.setUsername("sa");
+        ds.setMaxTotal(20);
         ds.setDriverClassName("org.h2.Driver");
         return ds;
     }
@@ -31,13 +34,29 @@ public class DatasourcesConfig {
         return ds;
     }
 
+    /**
+     * configure the connection pool properties
+     * @return the datasource needed to instantiate JDBC template
+     */
     @Bean
-    @Profile(value = "local")
-    public JdbcTemplate h2Template(){
-        return new JdbcTemplate(h2DataSource());
+    public DataSource hikariDataSource(){
+        HikariConfig config = new HikariConfig();
+        config.setMaximumPoolSize(2);
+        config.setPoolName("aryaks-pool");
+        config.setPassword("");
+        config.setUsername("sa");
+        config.setJdbcUrl("jdbc:h2:mem:testdb");
+        config.setDriverClassName("org.h2.Driver");
+        return new HikariDataSource(config);
     }
 
-    @Bean
+    @Bean(name = "jdbcTemplate")
+    @Profile(value = "local")
+    public JdbcTemplate h2Template(){
+        return new JdbcTemplate(hikariDataSource());
+    }
+
+    @Bean(value = "jdbcTemplate")
     @Profile(value = "qa")
     public JdbcTemplate mysqlTemplate(){
         return new JdbcTemplate(mySqlDataSource());
