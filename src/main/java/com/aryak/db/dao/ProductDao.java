@@ -10,5 +10,12 @@ public interface ProductDao {
 
     void save(Product p);
 
-    void sleep();
+    Product findById(int id);
+
+    int deleteById(int id);
+
+    int [] saveAll(List<Product> products);
+
+    // use this method when the size of list is too large
+    int [][] save(List<Product> products);
 }
