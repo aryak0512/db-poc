@@ -4,17 +4,13 @@ import com.aryak.db.dao.ProductDao;
 import com.aryak.db.domain.Product;
 import com.aryak.db.utils.Constants;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.web.bind.annotation.GetMapping;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
@@ -24,7 +20,6 @@ import java.util.stream.IntStream;
 public class DbTestApplication {
 
     private final ProductDao productDao;
-    ExecutorService executor = Executors.newFixedThreadPool(20);
     static AtomicInteger id = new AtomicInteger(4);
 
     public DbTestApplication(ProductDao productDao) {
