@@ -38,7 +38,7 @@ public class DatasourcesConfig {
      * configure the connection pool properties
      * @return the datasource needed to instantiate JDBC template
      */
-    @Bean
+    //@Bean
     public DataSource hikariDataSource(){
         HikariConfig config = new HikariConfig();
         config.setMaximumPoolSize(2);
@@ -50,13 +50,13 @@ public class DatasourcesConfig {
         return new HikariDataSource(config);
     }
 
-    @Bean(name = "jdbcTemplate")
+    //@Bean(name = "jdbcTemplate")
     @Profile(value = "local")
     public JdbcTemplate h2Template(){
         return new JdbcTemplate(hikariDataSource());
     }
 
-    @Bean(value = "jdbcTemplate")
+    //@Bean(value = "jdbcTemplate")
     @Profile(value = "qa")
     public JdbcTemplate mysqlTemplate(){
         return new JdbcTemplate(mySqlDataSource());
