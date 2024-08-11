@@ -1,13 +1,17 @@
 package com.aryak.db.multitenancy;
 
-import com.aryak.db.domain.DatabaseType;
 import com.aryak.db.domain.Tenant;
+import com.aryak.db.utils.ConfigManager;
+import com.aryak.db.utils.Constants;
 import com.aryak.db.utils.TenantUtils;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -16,16 +20,23 @@ import java.util.List;
 public class MultitenancyConfiguration {
 
     private final TenantStore tenantStore;
+    private final ConfigManager configManager;
 
-    public MultitenancyConfiguration(TenantStore tenantStore) {
+    public MultitenancyConfiguration(TenantStore tenantStore, ConfigManager configManager) {
         this.tenantStore = tenantStore;
+        this.configManager = configManager;
     }
 
     public void loadTenants() {
 
         // https://www.baeldung.com/multitenancy-with-spring-data-jpa
 
-        getAllTenants().stream()
+        List<Tenant> tenants = getAllTenants();
+        if ( tenants == null ) {
+            throw new RuntimeException("No tenant found!");
+        }
+
+        tenants.parallelStream()
                 .forEach(tenant -> {
                     tenantStore.put(tenant);
                     String url = TenantUtils.getUrl(tenant);
@@ -41,58 +52,24 @@ public class MultitenancyConfiguration {
     }
 
     /**
-     * Obtains client information from DB or REST call
+     * Obtains client information from remote service via REST call
      *
      * @return list of all tenant configuration
      */
     private List<Tenant> getAllTenants() {
 
-        Tenant tenant = Tenant.builder()
-                .host("127.0.0.1")
-                .password("example")
-                .tenantId("client1")
-                .databaseName("eshop")
-                .dbType(DatabaseType.MYSQL)
-                .username("root")
-                .port(3306)
-                .driver("com.mysql.cj.jdbc.Driver")
+        WebClient webClient = WebClient.builder()
+                .baseUrl(configManager.getProperty(Constants.TENANT_LOAD_URL))
                 .build();
 
-        Tenant tenant2 = Tenant.builder()
-                .host("127.0.0.1")
-                .password("root")
-                .tenantId("client2")
-                .databaseName("eshop")
-                .dbType(DatabaseType.POSTGRES)
-                .username("postgres")
-                .port(5433)
-                .driver("org.postgresql.Driver")
-                .build();
+        Mono<List<Tenant>> tenantsMono = webClient.get()
+                .uri("/tenantConfig")
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<>() {
+                });
 
-        // buggy config
-        Tenant tenant3 = Tenant.builder()
-                .host("127.0.0.1")
-                .password("root")
-                .tenantId("client3")
-                .databaseName("eshop")
-                .dbType(DatabaseType.POSTGRES)
-                .username("postgres")
-                .port(6379)
-                .driver("org.postgresql.Driver")
-                .build();
+        return tenantsMono.block();
 
-        Tenant tenant4 = Tenant.builder()
-                .host("127.0.0.1")
-                .password("root")
-                .tenantId("client4")
-                .databaseName("eshop")
-                .dbType(DatabaseType.POSTGRES)
-                .username("postgresfdef")
-                .port(5433)
-                .driver("org.postgresql.Driver")
-                .build();
-
-        return List.of(tenant2, tenant, tenant3, tenant4);
     }
 
     /**
@@ -101,6 +78,7 @@ public class MultitenancyConfiguration {
      * @param tenant the client
      * @param url    the JDBC url
      * @return JdbcTemplate
+     * @see https://github.com/brettwooldridge/HikariCP
      */
     private JdbcTemplate createTemplate(Tenant tenant, String url) {
         HikariConfig config = new HikariConfig();

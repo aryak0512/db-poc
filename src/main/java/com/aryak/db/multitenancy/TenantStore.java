@@ -31,6 +31,10 @@ public class TenantStore {
         return tenantConfig.get(tenant.getTenantId());
     }
 
+    public JdbcTemplate getTemplate(String tenantId) {
+        return tenantConfig.get(tenantId);
+    }
+
     public Tenant getClient(String clientId) {
 
         return Optional.ofNullable(tenantMap.get(clientId))
